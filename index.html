@@ -483,6 +483,9 @@
       <button class="toggle-btn" onclick="setBilling('yearly',this)">
         Yearly <span class="save-badge">10% OFF</span>
       </button>
+      <button class="toggle-btn" onclick="setBilling('biannually',this)">
+        Biannually <span class="save-badge">20% OFF</span>
+      </button>
     </div>
   </header>
 
@@ -636,6 +639,7 @@
           <div class="calc-billing-toggle">
             <button class="calc-billing-btn active" onclick="setCalcBilling('monthly',this)">Monthly</button>
             <button class="calc-billing-btn" onclick="setCalcBilling('yearly',this)">Yearly (–10%)</button>
+            <button class="calc-billing-btn" onclick="setCalcBilling('biannually',this)">Biannually (–20%)</button>
           </div>
         </div>
         <div class="calc-group">
@@ -789,7 +793,7 @@
     }
   });
 
-  const basePrices   = { launch:{monthly:1200,yearly:12960}, grow:{monthly:3500,yearly:37800}, scale:{monthly:7000,yearly:75600} };
+  const basePrices   = { launch:{monthly:1200,yearly:12960,biannually:23040}, grow:{monthly:3500,yearly:37800,biannually:67200}, scale:{monthly:7000,yearly:75600,biannually:134400} };
   const baseProfiles = { launch:1, grow:3, scale:5 };
   const msgsByPlan   = { launch:'30,000', grow:'90,000', scale:'270,000' };
   const addonRates   = {
@@ -807,14 +811,25 @@
     btn.classList.add('active');
     [['l','launch'],['g','grow'],['s','scale']].forEach(([x,plan]) => {
       const bp = basePrices[plan];
+      const noteEl = document.getElementById(x+'y');
       if (type === 'monthly') {
         document.getElementById(x+'p').textContent = bp.monthly.toLocaleString('en-IN');
         document.getElementById(x+'b').textContent = 'monthly';
-        document.getElementById(x+'y').style.display = 'none';
-      } else {
+        noteEl.style.display = 'none';
+      } else if (type === 'yearly') {
         document.getElementById(x+'p').textContent = Math.round(bp.yearly/12).toLocaleString('en-IN');
         document.getElementById(x+'b').textContent = 'yearly';
-        document.getElementById(x+'y').style.display = 'block';
+        const monthlyTotal = bp.monthly * 12;
+        const save = monthlyTotal - bp.yearly;
+        noteEl.textContent = 'Rs ' + bp.yearly.toLocaleString('en-IN') + ' / year · Save Rs ' + save.toLocaleString('en-IN');
+        noteEl.style.display = 'block';
+      } else if (type === 'biannually') {
+        document.getElementById(x+'p').textContent = Math.round(bp.biannually/24).toLocaleString('en-IN');
+        document.getElementById(x+'b').textContent = 'biannually';
+        const monthlyTotal = bp.monthly * 24;
+        const save = monthlyTotal - bp.biannually;
+        noteEl.textContent = 'Rs ' + bp.biannually.toLocaleString('en-IN') + ' / 2 years · Save Rs ' + save.toLocaleString('en-IN');
+        noteEl.style.display = 'block';
       }
     });
   }
@@ -895,12 +910,22 @@
       totalEl.textContent = fmt(totalM);
       perEl.textContent = 'per month';
       saveEl.classList.remove('show');
-    } else {
+    } else if (calcBilling === 'yearly') {
       const addonM = profileCost + msgCost + groupCost + contactCost + campaignCost;
       const totalY = bp.yearly + Math.round(addonM * 12 * 0.9);
       const saving = Math.round(totalM * 12 - totalY);
       totalEl.textContent = fmt(totalY);
       perEl.textContent = 'per year';
+      if (saving > 0) {
+        saveEl.classList.add('show');
+        saveEl.textContent = `🎉 You save ${fmt(saving)} vs monthly billing`;
+      } else { saveEl.classList.remove('show'); }
+    } else if (calcBilling === 'biannually') {
+      const addonM = profileCost + msgCost + groupCost + contactCost + campaignCost;
+      const totalB = bp.biannually + Math.round(addonM * 24 * 0.8);
+      const saving = Math.round(totalM * 24 - totalB);
+      totalEl.textContent = fmt(totalB);
+      perEl.textContent = 'per 2 years';
       if (saving > 0) {
         saveEl.classList.add('show');
         saveEl.textContent = `🎉 You save ${fmt(saving)} vs monthly billing`;
